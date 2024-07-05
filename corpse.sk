@@ -1,0 +1,70 @@
+###
+    ____                            _               ____  _           _   ____       _   _
+  / ___|___  _ __ _ __  ___  ___  | |__  _   _ _  / ___|| |__   ___ | |_|  _ \ __ _| |_| |__
+ | |   / _ \| '__| '_ \/ __|/ _ \ | '_ \| | | (_) \___ \| '_ \ / _ \| __| |_) / _` | __| '_ \
+ | |__| (_) | |  | |_) \__ \  __/ | |_) | |_| |_   ___) | | | | (_) | |_|  __/ (_| | |_| | | |
+  \____\___/|_|  | .__/|___/\___| |_.__/ \__, (_) |____/|_| |_|\___/ \__|_|   \__,_|\__|_| |_|
+                 |_|                     |___/
+Version: 0.1
+Owner: ShotPath
+Plugins:
+    Skript
+    LabySk
+    Citizens
+###
+on death:
+    if victim is a player:
+        set {_b::*} to drops
+        clear drops
+        wait 3 ticks
+        set {_a} to 1
+        loop 30 times:
+            if {Corpse::%{_a}%::*} is not set:
+                CorpseSpawn(victim, {_a})
+                set {Corpse::%{_a}%::ITEMS::*} to {_b::*}
+                wait 5 minutes
+                CorpseDespawn(victim, {_a})
+                stop
+            else:
+                add 1 to {_a}
+function CorpseSpawn(p: player, a: number):
+    set {Corpse::%{_a}%::Loc} to location of {_p}
+    set {Corpse::%{_a}%::NPC} to  {_p}
+    create npc with name "&7%{_p}%'s corpse" with skin of "%{_p}%" with id {_a} at {_p}
+    execute console command "npc sel %{_a}%"
+    wait 1 tick
+    execute console command "npc entitypose SLEEPING"
+function CorpseDespawn(p: player, a: number):
+    loop {Corpse::Open::*}:
+        if loop-value contains {_a}:
+            close inventory of loop-index parsed as a player
+    loop {Corpse::%{_a}%::ITEMS::*}:
+        drop loop-value at {Corpse::%{_a}%::Loc}
+    destroy citizen {_a}
+    clear {Corpse::%{_a}%::*}
+    delete {Corpse::%{_a}%}
+on npc right click:
+    set {_a} to 0
+    loop 30 times:
+        if npc is {_a}:
+            open chest inventory with 5 rows named "&7%{Corpse::%{_a}%::NPC}%'s corpse" to player
+            set {_n} to 0
+            loop {Corpse::%{_a}%::ITEMS::*}:
+                set slot {_n} of player's current inventory to loop-value-2
+                add 1 to {_n}
+            set {Corpse::Open::%player%} to {_a}
+        else:
+            add 1 to {_a}
+on npc left click:
+    set {_a} to 0
+    loop 30 times:
+        if npc is {_a}:
+            CorpseDespawn(player, {_a})
+        else:
+            add 1 to {_a}
+on inventory close:
+    if {Corpse::Open::%player%} is set:
+        set {_a} to {Corpse::Open::%player%}
+        loop 45 times:
+            set {Corpse::%{_a}%::ITEMS::%loop-number - 1%} to slot "%loop-number - 1%" parsed as an integer of current inventory of player
+        delete {Corpse::Open::%player%}
